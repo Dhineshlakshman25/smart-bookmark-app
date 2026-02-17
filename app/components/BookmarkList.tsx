@@ -5,9 +5,7 @@ import { supabase } from "@/lib/supabase";
 
 export default function BookmarkList() {
   const [bookmarks, setBookmarks] = useState<any[]>([]);
-  const [userId, setUserId] = useState<string | null>(null);
 
-  // Fetch bookmarks
   const fetchBookmarks = async (uid: string) => {
     const { data } = await supabase
       .from("bookmarks")
@@ -26,12 +24,11 @@ export default function BookmarkList() {
       if (!data.user) return;
 
       const uid = data.user.id;
-      setUserId(uid);
 
       // Initial fetch
       await fetchBookmarks(uid);
 
-      // 🔥 Proper realtime subscription
+      // 🔥 Realtime (REFETCH APPROACH)
       channel = supabase
         .channel("realtime-bookmarks")
         .on(
@@ -42,29 +39,9 @@ export default function BookmarkList() {
             table: "bookmarks",
             filter: `user_id=eq.${uid}`,
           },
-          async (payload) => {
-            console.log("Realtime event:", payload);
-
-            // Instead of refetching everything,
-            // update state directly for instant UI update
-
-            if (payload.eventType === "INSERT") {
-              setBookmarks((prev) => [payload.new, ...prev]);
-            }
-
-            if (payload.eventType === "DELETE") {
-              setBookmarks((prev) =>
-                prev.filter((b) => b.id !== payload.old.id)
-              );
-            }
-
-            if (payload.eventType === "UPDATE") {
-              setBookmarks((prev) =>
-                prev.map((b) =>
-                  b.id === payload.new.id ? payload.new : b
-                )
-              );
-            }
+          async () => {
+            // Always refetch fresh data
+            await fetchBookmarks(uid);
           }
         )
         .subscribe();
