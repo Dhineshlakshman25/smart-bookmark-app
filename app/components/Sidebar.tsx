@@ -155,9 +155,9 @@ export default function Sidebar({
 
       {/* Navigation */}
       <div className="space-y-4">
-        {navItem("bookmarks", <HomeIcon />, "My Bookmarks", total)}
+        {navItem("bookmarks", <HomeIcon />, "My Bookmarks")}
         {navItem("add", <PlusIcon />, "Add Bookmark")}
-        {navItem("categories", <TagIcon />, "Categories", categories.length)}
+        {navItem("categories", <TagIcon />, "Categories")}
       </div>
     </aside>
   );
