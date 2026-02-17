@@ -22,14 +22,13 @@ export default function Home() {
     await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${location.origin}/dashboard`,
+        redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/dashboard`,
       },
     });
   };
 
   return (
     <div className="relative min-h-screen flex items-center justify-center overflow-hidden bg-[#f8fafc]">
-
       {/* Radial Gradient Glow */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.15),transparent_40%),radial-gradient(circle_at_bottom_right,rgba(139,92,246,0.15),transparent_40%)]"></div>
 
@@ -42,7 +41,6 @@ export default function Home() {
 
       {/* Main Card */}
       <div className="relative z-10 w-full max-w-lg bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl px-10 py-14 text-center border border-white/40">
-
         {/* Logo */}
         <div className="flex flex-col items-center mb-10">
           <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center mb-4 shadow-lg">
@@ -63,9 +61,7 @@ export default function Home() {
         </h1>
 
         {/* Subtitle */}
-        <p className="text-gray-500 mb-10">
-          Secure, real-time, and private.
-        </p>
+        <p className="text-gray-500 mb-10">Secure, real-time, and private.</p>
 
         {/* Google Button */}
         <button
@@ -88,9 +84,7 @@ export default function Home() {
         </p>
 
         {/* Footer */}
-        <div className="mt-14 text-sm text-gray-400">
-          © 2026 SmartBookmark
-        </div>
+        <div className="mt-14 text-sm text-gray-400">© 2026 SmartBookmark</div>
       </div>
     </div>
   );
