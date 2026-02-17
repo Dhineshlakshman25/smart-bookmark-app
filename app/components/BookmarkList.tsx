@@ -5,30 +5,39 @@ import { supabase } from "@/lib/supabase";
 
 export default function BookmarkList() {
   const [bookmarks, setBookmarks] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [userId, setUserId] = useState<string | null>(null);
 
   const fetchBookmarks = async (uid: string) => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("bookmarks")
       .select("*, categories(name)")
       .eq("user_id", uid)
       .order("created_at", { ascending: false });
 
-    setBookmarks(data || []);
+    if (!error) {
+      setBookmarks(data || []);
+    }
+
+    setLoading(false);
   };
 
   useEffect(() => {
     let channel: any;
 
     const setup = async () => {
-      const { data } = await supabase.auth.getUser();
-      if (!data.user) return;
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
 
-      const uid = data.user.id;
+      if (!user) return;
+
+      setUserId(user.id);
 
       // Initial fetch
-      await fetchBookmarks(uid);
+      await fetchBookmarks(user.id);
 
-      // 🔥 Realtime (REFETCH APPROACH)
+      // 🔥 Realtime subscription
       channel = supabase
         .channel("realtime-bookmarks")
         .on(
@@ -37,11 +46,10 @@ export default function BookmarkList() {
             event: "*",
             schema: "public",
             table: "bookmarks",
-            filter: `user_id=eq.${uid}`,
+            filter: `user_id=eq.${user.id}`,
           },
           async () => {
-            // Always refetch fresh data
-            await fetchBookmarks(uid);
+            await fetchBookmarks(user.id);
           }
         )
         .subscribe();
@@ -57,8 +65,26 @@ export default function BookmarkList() {
   }, []);
 
   const deleteBookmark = async (id: string) => {
-    await supabase.from("bookmarks").delete().eq("id", id);
+    if (!userId) return;
+
+    // 🔥 Optimistic update (instant UI change)
+    setBookmarks((prev) => prev.filter((b) => b.id !== id));
+
+    const { error } = await supabase
+      .from("bookmarks")
+      .delete()
+      .eq("id", id)
+      .eq("user_id", userId);
+
+    if (error) {
+      // rollback if something fails
+      await fetchBookmarks(userId);
+    }
   };
+
+  if (loading) {
+    return <p className="text-gray-500">Loading bookmarks...</p>;
+  }
 
   return (
     <div>
@@ -66,28 +92,36 @@ export default function BookmarkList() {
         Your Bookmarks
       </h2>
 
+      {bookmarks.length === 0 && (
+        <p className="text-gray-500">No bookmarks yet.</p>
+      )}
+
       <div className="space-y-4">
         {bookmarks.map((b) => (
           <div
             key={b.id}
-            className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex justify-between"
+            className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex justify-between items-center"
           >
             <div>
               <a
                 href={b.url}
                 target="_blank"
+                rel="noopener noreferrer"
                 className="text-blue-600 font-medium hover:underline"
               >
                 {b.title}
               </a>
-              <p className="text-sm text-gray-500">
-                {b.categories?.name}
-              </p>
+
+              {b.categories?.name && (
+                <p className="text-sm text-gray-500 mt-1">
+                  {b.categories.name}
+                </p>
+              )}
             </div>
 
             <button
               onClick={() => deleteBookmark(b.id)}
-              className="text-red-500 hover:text-red-600"
+              className="text-red-500 hover:text-red-600 transition"
             >
               Delete
             </button>
